@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+*.egg-info/
+
+# Dados e temporários
+data/*.pdf
+data/*.txt
+chroma_db/
+*.db
+
+# IDEs
+.vscode/
+.idea/
+
+# Variáveis de ambiente
+.env
+*.key
+
+# Streamlit
+.streamlit/secrets.toml
