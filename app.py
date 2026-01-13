@@ -92,7 +92,7 @@ if uploaded_files:
         st.markdown("### 📈 Resultados do Processamento")
 
         for i, result in enumerate(all_results, 1):
-            if result["sucess"]:
+            if result["success"]:
                 st.success(f"✅ **{result['metadata']['source_file']}**")
 
                 col1, col2, col3 = st.columns(3)

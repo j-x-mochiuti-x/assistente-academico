@@ -134,7 +134,7 @@ class DocumentProcessor:
         import re
 
         #remove multiplos espaços
-        text = re.sun(r' +', ' ', text)
+        text = re.sub(r' +', ' ', text)
         
         #remove espaços no inicio e fim de cada linha
         text = re.sub(r'\n{3,}', '\n\n', text)
@@ -210,7 +210,7 @@ class DocumentProcessor:
         
         return chunks
     
-    def process_pdf(self, pdf_source: Any, filename: str = "docuemnto.pdf") -> Dict[str, Any]:
+    def process_pdf(self, pdf_source: Any, filename: str = "documento.pdf") -> Dict[str, Any]:
         """
         Pipeline completo de processamento de PDF.
         
@@ -266,7 +266,7 @@ def process_single_pdf(pdf_source: Any, filename: str = "documento.pdf") -> Dict
 
     Usage:
     result = process_single_pdf(uploaded_file, "paper.pdf)
-    if result["sucess"]:
+    if result["success"]:
         chunks = result["documents"]
     """
     processor = DocumentProcessor()
