@@ -72,6 +72,52 @@ uploaded_files = st.file_uploader(
 if uploaded_files:
     st.success(f"✅ {len(uploaded_files)} arquivo(s) carregado(s)")
     
+    if st.button("📊 Processar Documentos", type="primary"):
+
+        # Importa o processador
+        from src.document_processor import DocumentProcessor
+        from src.utils import get_document_stats
+
+        #Inicializa o processador
+        processor = DocumentProcessor()
+        #Processa cada PDF
+        all_results = []
+
+        with st.spinner("Processando PDFs..."):
+            for uploaded_file in uploaded_files:
+                result = processor.process_pdf(uploaded_file, uploaded_file.name)
+                all_results.append(result)
+        
+        # Exibe resultados
+        st.markdown("### 📈 Resultados do Processamento")
+
+        for i, result in enumerate(all_results, 1):
+            if result["sucess"]:
+                st.success(f"✅ **{result['metadata']['source_file']}**")
+
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Páginas", result["stats"]["total_pages"])
+                with col2:
+                    st.metric("Chunks", result["stats"]["total_chunks"])
+                with col3:
+                    st.metric("média/Chunk", f"{result['stats']['avg_chunk_size']:.0f} chars")
+
+                #Mostra Preview dos primeiros chunks
+                with st.expander("🔍 Preview dos Chunks"):
+                    from src.utils import format_document_for_display
+
+                    for j, doc in enumerate(result["documents"][:3], 1):
+                        st.markdown(f"**Chunk {j}:**")
+                        st.text(format_document_for_display(doc, max_length=300))
+                        st.divider()
+
+            else:
+                st.error(f"❌ **{uploaded_files[i-1].name}**: {result['error']}")
+
+        st.session_state.processed_docs = all_results
+        st.session_state.processing_done = True
+        
     # Mostrar lista de arquivos
     with st.expander("📋 Arquivos Carregados"):
         for i, file in enumerate(uploaded_files, 1):
