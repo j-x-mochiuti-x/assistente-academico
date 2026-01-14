@@ -118,6 +118,8 @@ if uploaded_files:
         st.session_state.processed_docs = all_results
         st.session_state.processing_done = True
         
+
+
     # Mostrar lista de arquivos
     with st.expander("📋 Arquivos Carregados"):
         for i, file in enumerate(uploaded_files, 1):
@@ -125,22 +127,108 @@ if uploaded_files:
 else:
     st.info("👆 Comece fazendo upload de papers científicos")
 
+if st.session_state.get("processing_done"):
+            st.markdown("---")
+            st.subheader("🔧 Configurar Sistema RAG")
+
+            if st.button("⚙️ Criar Banco Vetorial", type="primary"):
+                from src.rag_engine import RAGEngine
+
+                #coleta todos os chunks proessados
+                all_chunks = []
+                for result in st.session_state.processed_docs:
+                    if result["success"]:
+                        all_chunks.extend(result["documents"])
+
+                if not all_chunks:
+                    st.error("Nenhum documento processado com sucesso")
+                    st.stop()
+
+                with st.spinner(f"Criando banco vetorial com {len(all_chunks)} chunks..."):
+                    try:
+                        # Cria o motor RAG
+                        rag_engine = RAGEngine()
+                        
+                        # Cria vectorstore
+                        rag_engine.create_vectorstore(all_chunks)
+                        
+                        # Cria retriever
+                        rag_engine.create_retriever()
+                        
+                        # Salva no session_state
+                        st.session_state.rag_engine = rag_engine
+                        st.session_state.rag_ready = True
+                        
+                        st.success("✅ Sistema RAG criado com sucesso!")
+                        
+                        # Mostra estatísticas
+                        col1, col2, col3 = st.columns(3)
+                        with col1:
+                            st.metric("Total de Chunks", len(all_chunks))
+                        with col2:
+                            st.metric("Modelo Embedding", rag_engine.embedding_model_name.split('/')[-1])
+                        with col3:
+                            st.metric("Modelo LLM", rag_engine.llm_model_name.split('/')[-1])
+                    
+                    except Exception as e:
+                        st.error(f"Erro ao criar sistema RAG: {str(e)}")
+                        st.stop()
+                
+# Área de perguntas (atualizada)
 st.markdown("---")
 st.subheader("💬 Faça sua Pergunta")
 
-pergunta = st.text_area(
-    "Digite sua pergunta sobre os papers",
-    height=100,
-    placeholder="Ex: Quais metodologias foram utilizadas nos estudos sobre machine learning?"
-)
+if not st.session_state.get("rag_ready"):
+    st.info("👆 Processe os documentos e crie o banco vetorial primeiro")
+    pergunta = st.text_area(
+        "Digite sua pergunta sobre os papers",
+        height=100,
+        disabled=True,
+        placeholder="Configure o sistema RAG primeiro..."
+    )
+else:
+    pergunta = st.text_area(
+        "Digite sua pergunta sobre os papers",
+        height=100,
+        placeholder="Ex: Quais metodologias foram utilizadas nos estudos?"
+    )
 
 col1, col2 = st.columns([1, 5])
 with col1:
-    btn_perguntar = st.button("🔍 Analisar", type="primary", disabled=not uploaded_files)
+    btn_perguntar = st.button(
+        "🔍 Analisar", 
+        type="primary", 
+        disabled=not st.session_state.get("rag_ready")
+    )
 
 if btn_perguntar and pergunta:
-    st.info("🚧 Funcionalidade em desenvolvimento - Fase 2")
+    with st.spinner("🤔 Analisando papers e gerando resposta..."):
+        try:
+            # Faz a query no sistema RAG
+            result = st.session_state.rag_engine.query(
+                question=pergunta,
+                return_sources=True
+            )
+            
+            # Exibe resposta
+            st.markdown("### 📝 Resposta")
+            st.write(result["answer"])
+            
+            # Exibe fontes usadas
+            st.markdown("---")
+            st.markdown("### 📚 Fontes Consultadas")
+            
+            for i, doc in enumerate(result["sources"], 1):
+                with st.expander(f"📄 Fonte {i}: {doc.metadata.get('source_file', 'N/A')} - Página {doc.metadata.get('page', '?')}"):
+                    st.text(doc.page_content[:500] + "..." if len(doc.page_content) > 500 else doc.page_content)
+            
+            # Exibe metadados
+            with st.expander("ℹ️ Informações da Consulta"):
+                st.json(result["metadata"])
+        
+        except Exception as e:
+            st.error(f"Erro ao processar pergunta: {str(e)}")
 
 # Footer
 st.markdown("---")
-st.caption("Desenvolvido para portfólio de Ciência de Dados | Powered by LangChain + Groq")
+st.caption("Desenvolvido para portfólio de João Otávio Mochiuti | Powered by LangChain + Groq")
