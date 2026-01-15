@@ -30,12 +30,12 @@ EMBEDDING_CONFIG = {
 # Configurações de Chunking (divisão de texto)
 CHUNK_CONFIG = {
     "chunk_size": 1200,      # Chunks maiores para contexto acadêmico
-    "chunk_overlap": 200,    # Sobreposição para não perder contexto
+    "chunk_overlap": 300,    # Sobreposição para não perder contexto
 }
 
 # Configurações de Retrieval (busca)
 RETRIEVAL_CONFIG = {
-    "k": 5,  # Número de chunks relevantes a buscar
+    "k": 8,  # Número de chunks relevantes a buscar
 }
 
 # Configurações da Interface

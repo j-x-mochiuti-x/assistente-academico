@@ -279,40 +279,55 @@ Contexto dos Papers:
         return rag_chain
     
     def query(
-        self, 
-        question: str, 
-        return_sources: bool = True
-    ) -> Dict[str, Any]:
-        """
-        Faz uma pergunta ao sistema RAG.
-        
-        Este é o método principal que você vai usar!
-        
-        Args:
-            question: Pergunta do usuário
-            return_sources: Se True, retorna os chunks usados
-            
-        Returns:
-            Dicionário com:
-            - answer: Resposta gerada
-            - sources: Chunks recuperados (se return_sources=True)
-            - metadata: Informações sobre a busca
-        """
+    self,
+    question: str, 
+    return_sources: bool = True
+) -> Dict[str, Any]:
         if self._retriever is None:
             raise ValueError("Sistema RAG não inicializado completamente")
-        
+    
         print(f"⏳ Processando pergunta: {question[:50]}...")
-        
+    
         # 1. Busca documentos relevantes
-        retrieved_docs = self._retriever.get_relevant_documents(question)
+        retrieved_docs = self._retriever.invoke(question)
         
-        # 2. Cria a chain
-        rag_chain = self.create_rag_chain()
+        print(f"🐛 DEBUG - Documentos recuperados: {len(retrieved_docs)}")
         
-        # 3. Gera resposta
-        answer = rag_chain.invoke(question)
+        # 2. Formata o contexto
+        context = self.format_documents(retrieved_docs)
         
-        # 4. Prepara resultado
+        print(f"🐛 DEBUG - Tamanho do contexto: {len(context)} chars")
+        
+        # 3. Define o prompt (inline, não separado)
+        system_prompt = """Você é um assistente acadêmico especializado em análise de papers científicos.
+
+    Sua tarefa é responder perguntas baseando-se ESTRITAMENTE no contexto fornecido dos papers.
+
+    Diretrizes:
+    1. **Cite as fontes**: Sempre mencione de qual paper veio cada informação (ex: "Segundo o documento...")
+    2. **Seja preciso**: Se a resposta não estiver no contexto, diga "Não encontrei essa informação nos papers fornecidos"
+    3. **Estruture bem**: Use seções como "Resumo", "Detalhes" quando apropriado
+    4. **Linguagem acadêmica**: Use terminologia técnica apropriada, mas seja claro
+
+    Contexto dos Papers:
+    {context}
+
+    Pergunta: {question}"""
+
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", system_prompt)
+        ])
+        
+        # 4. Cria chain simples
+        chain = prompt | self.llm | StrOutputParser()
+        
+        # 5. Executa chain com contexto e pergunta
+        answer = chain.invoke({
+            "context": context,
+            "question": question
+        })
+        
+        # 6. Prepara resultado
         result = {
             "answer": answer,
             "metadata": {
@@ -328,18 +343,3 @@ Contexto dos Papers:
         print("✅ Resposta gerada")
         return result
 
-
-# Função auxiliar para uso rápido
-def create_rag_system(documents: List[Document]) -> RAGEngine:
-    """
-    Cria um sistema RAG completo em um comando.
-    
-    Usage:
-        rag = create_rag_system(processed_chunks)
-        result = rag.query("Qual a metodologia usada?")
-        print(result["answer"])
-    """
-    engine = RAGEngine()
-    engine.create_vectorstore(documents)
-    engine.create_retriever()
-    return engine

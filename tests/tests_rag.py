@@ -29,7 +29,7 @@ def test_document_formatting():
     formatted = engine.format_documents(test_docs)
 
     assert "paper1.pdf" in formatted
-    assert "papper2.pdf" in formatted
+    assert "paper2.pdf" in formatted
     assert "machine learning" in formatted
     print("✅ Formatação de documentos funciona")
     print(f"\nExemplo formatado:\n{formatted[:200]}...")
