@@ -21,7 +21,6 @@ from langchain_core.runnables import RunnableParallel, RunnablePassthrough
 
 from config import EMBEDDING_CONFIG, LLM_CONFIG, RETRIEVAL_CONFIG, CHROMA_DIR
 
-
 class RAGEngine:
     """
     Motor RAG completo para análise de papers acadêmicos.
@@ -343,3 +342,110 @@ Contexto dos Papers:
         print("✅ Resposta gerada")
         return result
 
+    def query_with_filters(
+        self,
+        question: str,
+        author: str = None,
+        year: int = None,
+        return_sources: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Faz uma pergunta ao sistema RAG com filtros de metadados.
+        
+        Args:
+            question: Pergunta do usuário
+            author: Filtrar por autor (opcional)
+            year: Filtrar por ano (opcional)
+            return_sources: Se True, retorna os chunks usados
+            
+        Returns:
+            Dicionário com resposta e metadados
+        """
+        if self._vectorstore is None:
+            raise ValueError("Vectorstore não inicializado")
+        
+        print(f"⏳ Processando pergunta com filtros...")
+        if author:
+            print(f"   👤 Filtro de autor: {author}")
+        if year:
+            print(f"   📅 Filtro de ano: {year}")
+        
+        # Constrói filtro para ChromaDB
+        filter_dict = {}
+        if author:
+            filter_dict["author"] = author
+        if year:
+            filter_dict["year"] = year
+        
+        # Busca com filtros
+        if filter_dict:
+            # Usa similarity_search com filtro
+            retrieved_docs = self._vectorstore.similarity_search(
+                query=question,
+                k=RETRIEVAL_CONFIG["k"],
+                filter=filter_dict
+            )
+        else:
+            # Busca normal sem filtros
+            retrieved_docs = self._retriever.invoke(question)
+        
+        print(f"🐛 DEBUG - Documentos recuperados (com filtros): {len(retrieved_docs)}")
+        
+        if not retrieved_docs:
+            return {
+                "answer": f"Não encontrei documentos correspondentes aos filtros especificados (autor: {author}, ano: {year}).",
+                "sources": [],
+                "metadata": {
+                    "chunks_retrieved": 0,
+                    "filters_applied": filter_dict
+                }
+            }
+        
+        # Formata contexto
+        context = self.format_documents(retrieved_docs)
+        
+        # Define prompt
+        system_prompt = """Você é um assistente acadêmico especializado em análise de papers científicos.
+
+    Sua tarefa é responder perguntas baseando-se ESTRITAMENTE no contexto fornecido dos papers.
+
+    Diretrizes:
+    1. **Cite as fontes**: Sempre mencione de qual paper veio cada informação
+    2. **Seja preciso**: Se a resposta não estiver no contexto, diga claramente
+    3. **Estruture bem**: Use seções quando apropriado
+    4. **Linguagem acadêmica**: Use terminologia técnica, mas seja claro
+
+    Contexto dos Papers:
+    {context}
+
+    Pergunta: {question}"""
+
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", system_prompt)
+        ])
+        
+        # Cria chain
+        chain = prompt | self.llm | StrOutputParser()
+        
+        # Executa
+        answer = chain.invoke({
+            "context": context,
+            "question": question
+        })
+        
+        # Resultado
+        result = {
+            "answer": answer,
+            "metadata": {
+                "chunks_retrieved": len(retrieved_docs),
+                "filters_applied": filter_dict,
+                "model": self.llm_model_name,
+                "embedding_model": self.embedding_model_name
+            }
+        }
+        
+        if return_sources:
+            result["sources"] = retrieved_docs
+        
+        print("✅ Resposta gerada")
+        return result
