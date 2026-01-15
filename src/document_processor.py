@@ -3,6 +3,7 @@ Módulo responsável por processar documentos acadêmicos (PDFs).
 Extrai texto, limpa, divide em chunks e prepara para vetorização.
 """
 import os
+import json
 import tempfile
 from typing import List, Dict, Any
 from pathlib import Path
@@ -42,6 +43,7 @@ class DocumentProcessor:
             length_function=len
         )
     
+
     def load_pdf(self, pdf_source: Any, filename: str="documento.pdf") -> List[Document]:
         """
         Carrega um PDF e extrai o conteúdo de dentro.
@@ -210,6 +212,79 @@ class DocumentProcessor:
         
         return chunks
     
+    def extract_metadata_advanced(self, documents: List[Document], filename: str) -> Dict[str, Any]:
+        if not documents:
+            return {
+                "source_file": filename,
+                "author": "Unknown",
+                "year": None,
+                "title": filename,
+                "total_pages": 0
+            }
+
+        # Use the first page content (usually contains title, authors, and year)
+        # Limiting to 3000 characters to save tokens and focus on the header
+        content_sample = documents[0].page_content[:3000]
+        total_pages = len(documents)
+
+        # System prompt to enforce JSON output
+        system_prompt = (
+            "You are a specialized academic assistant. Your task is to extract metadata from scientific papers. "
+            "Respond ONLY with a raw JSON object. Do not include markdown formatting or explanations."
+        )
+
+        user_prompt = f"""
+        Extract the following information from the provided text sample of a scientific paper:
+        - title (The main title of the paper)
+        - author (The primary or first author's full name)
+        - year (The publication year as an integer, e.g., 2024)
+
+        Text Sample:
+        ---
+        {content_sample}
+        ---
+
+        Expected JSON format:
+        {{
+            "title": "string",
+            "author": "string",
+            "year": integer
+        }}
+        """
+
+        try:
+            # Calling the LLM via the property self.llm (which uses ChatGroq)
+            response = self.llm.invoke([
+                ("system", system_prompt),
+                ("user", user_prompt)
+            ])
+
+            # Clean the response content (remove potential markdown backticks)
+            raw_content = response.content.strip().replace("```json", "").replace("```", "")
+            
+            # Parse the JSON string into a Python dictionary
+            llm_metadata = json.loads(raw_content)
+
+            # Build the final metadata dictionary
+            return {
+                "source_file": filename,
+                "total_pages": total_pages,
+                "title": llm_metadata.get("title", filename),
+                "author": llm_metadata.get("author", "Unknown"),
+                "year": llm_metadata.get("year")
+            }
+
+        except Exception as e:
+            print(f"⚠️ Error extracting metadata with LLM for {filename}: {e}")
+            # Fallback to basic info if LLM fails
+            return {
+                "source_file": filename,
+                "total_pages": total_pages,
+                "title": filename,
+                "author": "Unknown",
+                "year": None
+            }
+
     def process_pdf(self, pdf_source: Any, filename: str = "documento.pdf") -> Dict[str, Any]:
         """
         Pipeline completo de processamento de PDF.
@@ -231,9 +306,11 @@ class DocumentProcessor:
             #carrega o pdf
             raw_documents = self.load_pdf(pdf_source, filename)
             #extrai metadados
-            metadata = self.extract_metadata(raw_documents)
+            metadata = self.extract_metadata_advanced(raw_documents, filename)
             #divide em chunks
             chunks = self.split_documents(raw_documents)
+            # Adiciona metadados aos chunks
+            chunks = self.add_metadata_to_chunks(chunks, metadata)
             #calcula estatisticas
             stats = {
                 "total_pages": len(raw_documents),
@@ -258,7 +335,21 @@ class DocumentProcessor:
                 "success": False,
                 "error": str(e)
             }
-        
+
+    def add_metadata_to_chunks(self, chunks: List[Document], metadata: Dict[str, Any]) -> List[Document]:
+        """
+        Adiciona metadados extraídos a cada chunk.
+
+        Args:
+            chunks: Lista de chunks
+            metadata: Dicionário de metadados
+
+        Returns:
+            Lista de chunks com metadados atualizados
+        """
+        for chunk in chunks:
+            chunk.metadata.update(metadata)
+        return chunks
 #Função auxiliar para uso direto (sem instanciar classe)
 def process_single_pdf(pdf_source: Any, filename: str = "documento.pdf") -> Dict[str, Any]:
     """
