@@ -35,7 +35,7 @@ CHUNK_CONFIG = {
 
 # Configurações de Retrieval (busca)
 RETRIEVAL_CONFIG = {
-    "k": 8,  # Número de chunks relevantes a buscar
+    "k": 15,  # Número de chunks relevantes a buscar
 }
 
 # Configurações da Interface
@@ -57,3 +57,31 @@ Diretrizes:
 4. **Compare quando pedido**: Faça comparações diretas entre estudos
 5. **Linguagem acadêmica**: Use terminologia técnica, mas seja claro
 """
+
+# Opções de Modelos de Embedding
+EMBEDDING_OPTIONS = {
+    "MiniLM (Rápido)": {
+        "model_name": "sentence-transformers/all-MiniLM-L6-v2",
+        "description": "Modelo leve e rápido. Bom para testes. (80MB)",
+        "dimensions": 384,
+        "speed": "⚡⚡⚡",
+        "quality": "⭐⭐⭐"
+    },
+    "Nomic Embed (Balanceado)": {
+        "model_name": "nomic-ai/nomic-embed-text-v1.5",
+        "description": "Melhor qualidade, velocidade média. Recomendado para produção. (550MB)",
+        "dimensions": 768,
+        "speed": "⚡⚡",
+        "quality": "⭐⭐⭐⭐⭐"
+    },
+    "BGE-M3 (Premium)": {
+        "model_name": "BAAI/bge-m3",
+        "description": "Máxima qualidade multilingual. Requer GPU ou paciência. (2.3GB)",
+        "dimensions": 1024,
+        "speed": "⚡",
+        "quality": "⭐⭐⭐⭐⭐⭐"
+    }
+}
+
+# Embedding padrão (usado se não especificado)
+DEFAULT_EMBEDDING = "MiniLM (Rápido)"
