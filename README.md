@@ -45,3 +45,13 @@ Obtenha sua API Key em: https://console.groq.com/
 - **Groq**: LLM inference
 - **HuggingFace**: Embeddings
 
+## 🧠 Modelos de Embedding Suportados
+
+- **MiniLM-L6-v2**: Rápido e eficiente (recomendado para testes)
+- **Nomic Embed v1.5**: Melhor qualidade (recomendado para produção) ⭐
+- **BGE-M3**: Máxima qualidade (requer GPU ou *PACIÊNCIA!!*)
+
+### Benchmark Interno
+Pergunta: "Qual é o objetivo do trabalho?"
+- MiniLM: ✅ Recuperou corretamente (0.5s indexação)
+- Nomic: ✅ Recuperou + melhor estruturação (2.1s indexação)
