@@ -51,20 +51,22 @@ class RAGEngine:
     
     @property
     def embeddings(self):
-        """
-        Lazy loading: só carrega embeddings quando necessário.
-        Embeddings são modelos pesados (80MB-2GB), economiza memória.
-        """
+        
         if self._embeddings is None:
             print(f"⏳ Carregando modelo de embeddings: {self.embedding_model_name}...")
             
             # Desativa paralelismo do tokenizador (evita warnings)
             os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
+            model_kwargs = {'device': 'cpu'}
+
+            if 'nomic' in self.embedding_model_name.lower():
+                model_kwargs['trust_remote_code'] = True
             
             self._embeddings = HuggingFaceEmbeddings(
                 model_name=self.embedding_model_name,
-                model_kwargs={'device': 'cpu'},  # Use 'cuda' se tiver GPU
-                encode_kwargs={'normalize_embeddings': True}  # Melhora similaridade coseno
+                model_kwargs=model_kwargs,  
+                encode_kwargs={'normalize_embeddings': True} 
             )
             
             print("✅ Embeddings carregados")

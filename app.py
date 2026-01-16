@@ -4,7 +4,7 @@ Fase 1: Estrutura básica funcional
 """
 import streamlit as st
 import os
-from config import UI_CONFIG, LLM_CONFIG
+from config import UI_CONFIG, LLM_CONFIG, EMBEDDING_CONFIG, EMBEDDING_OPTIONS, DEFAULT_EMBEDDING, CHROMA_DIR
 import datetime
 
 
@@ -35,6 +35,30 @@ with st.sidebar:
     if api_key:
         os.environ["GROQ_API_KEY"] = api_key
         st.success("✅ API Key configurada")
+    
+    st.divider()
+
+    st.subheader("🧠 Modelo de Embedding")
+
+    from config import EMBEDDING_OPTIONS, DEFAULT_EMBEDDING
+
+    selected_embedding = st.selectbox(
+        "Escolha o modelo de embedding",
+        options=list(EMBEDDING_OPTIONS.keys()),
+        index=list(EMBEDDING_OPTIONS.keys()).index(DEFAULT_EMBEDDING),
+        help="Diferentes modelos têm trade-offs entre velocidade e qualidade"
+        )
+    
+    embedding_info = EMBEDDING_OPTIONS[selected_embedding]
+    
+    with st.expander("ℹ️ Detalhes do Modelo", expanded=False):
+        st.write(f"**Descrição:** {embedding_info['description']}")
+        st.write(f"**Dimensões:** {embedding_info['dimensions']}")
+        st.write(f"**Velocidade:** {embedding_info['speed']}")
+        st.write(f"**Qualidade:** {embedding_info['quality']}")
+    
+    st.session_state.selected_embedding_model = embedding_info["model_name"]
+    st.session_state.selected_embedding_name = selected_embedding
     
     st.divider()
     
@@ -205,6 +229,11 @@ if st.session_state.get("processing_done"):
             st.markdown("---")
             st.subheader("🔧 Configurar Sistema RAG")
 
+            # Mostra qual embedding está selecionado
+            if st.session_state.get("selected_embedding_name"):
+                st.info(f"🧠 Modelo selecionado: **{st.session_state.selected_embedding_name}**")
+    
+
             if st.button("⚙️ Criar Banco Vetorial", type="primary"):
                 from src.rag_engine import RAGEngine
 
@@ -218,10 +247,30 @@ if st.session_state.get("processing_done"):
                     st.error("Nenhum documento processado com sucesso")
                     st.stop()
 
+                embedding_model = st.session_state.get(
+                    "selected_embedding_model",
+                    EMBEDDING_CONFIG["model_name"]
+                )
+                 #Cria nome de collection único baseado no embedding
+                # Isso permite ter múltiplas versões com embeddings diferentes
+                embedding_collection_map = {
+                    "MiniLM (Rápido)": "papers_minilm",
+                    "Nomic Embed (Balanceado)": "papers_nomic",
+                    "BGE-M3 (Premium)": "papers_bge_m3"
+                }
+
+                collection_name = embedding_collection_map.get(
+                    st.session_state.selected_embedding_name,
+                    "papers_default"
+)
+
                 with st.spinner(f"Criando banco vetorial com {len(all_chunks)} chunks..."):
                     try:
                         # Cria o motor RAG
-                        rag_engine = RAGEngine()
+                        rag_engine = RAGEngine(
+                            embedding_model=embedding_model,
+                            collection_name=collection_name
+                    )
                         
                         # Cria vectorstore
                         rag_engine.create_vectorstore(all_chunks)
@@ -232,20 +281,23 @@ if st.session_state.get("processing_done"):
                         # Salva no session_state
                         st.session_state.rag_engine = rag_engine
                         st.session_state.rag_ready = True
-                        
+                        st.session_state.current_embedding = st.session_state.selected_embedding_name
                         st.success("✅ Sistema RAG criado com sucesso!")
                         
                         # Mostra estatísticas
-                        col1, col2, col3 = st.columns(3)
+                        col1, col2, col3, col4 = st.columns(4)
                         with col1:
                             st.metric("Total de Chunks", len(all_chunks))
                         with col2:
-                            st.metric("Modelo Embedding", rag_engine.embedding_model_name.split('/')[-1])
+                            st.metric("Embedding", st.session_state.selected_embedding_name.split()[0])
                         with col3:
-                            st.metric("Modelo LLM", rag_engine.llm_model_name.split('/')[-1])
-                    
+                            st.metric("Dimensões", EMBEDDING_OPTIONS[st.session_state.selected_embedding_name]["dimensions"])
+                        with col4:
+                            st.metric("Collection", collection_name[:15] + "...")
                     except Exception as e:
                         st.error(f"Erro ao criar sistema RAG: {str(e)}")
+                        import traceback
+                        st.code(traceback.format_exc())
                         st.stop()
                 
 # Área de perguntas (CORRIGIDA)
