@@ -23,7 +23,7 @@ st.caption("Análise inteligente de papers científicos usando RAG")
 
 # Sidebar
 with st.sidebar:
-    st.header("⚙️ Configurações")
+    st.header("⚙️ Configurações - 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")
     
     # Input da API Key
     api_key = st.text_input(
@@ -248,21 +248,32 @@ if st.session_state.get("processing_done"):
                         st.error(f"Erro ao criar sistema RAG: {str(e)}")
                         st.stop()
                 
-# Área de perguntas (atualizada)
+# Área de perguntas (CORRIGIDA)
 st.markdown("---")
 st.subheader("💬 Faça sua Pergunta")
 
+# Inicializa variáveis de filtro
+use_author_filter = False
+use_year_filter = False
+selected_author = None
+selected_year = None
+
 if not st.session_state.get("rag_ready"):
     st.info("👆 Processe os documentos e crie o banco vetorial primeiro")
-    
+    pergunta = st.text_area(
+        "Digite sua pergunta sobre os papers",
+        height=100,
+        disabled=True,
+        placeholder="Configure o sistema RAG primeiro..."
+    )
 else:
+    # FILTROS DE BUSCA (só aparece se RAG está pronto)
     st.markdown("#### 🔍 Filtros de Busca (Opcional)")
-    col1, col2, col3 = st.columns(3)
-
+    
     # Coletar autores e anos disponíveis
     available_authors = set()
     available_years = set()
-
+    
     if st.session_state.get("processed_docs"):
         for result in st.session_state.processed_docs:
             if result["success"]:
@@ -271,9 +282,10 @@ else:
                     available_authors.add(meta["author"])
                 if meta.get("year"):
                     available_years.add(meta["year"])
-
-
-with col1:
+    
+    filter_col1, filter_col2, filter_col3 = st.columns(3)
+    
+    with filter_col1:
         use_author_filter = st.checkbox("Filtrar por Autor")
         if use_author_filter and available_authors:
             selected_author = st.selectbox(
@@ -281,61 +293,49 @@ with col1:
                 options=["Todos"] + sorted(list(available_authors)),
                 key="filter_author"
             )
-        else:
-            selected_author = None
+            if selected_author == "Todos":
+                selected_author = None
     
-with col2:
-    use_year_filter = st.checkbox("Filtrar por Ano")
-    if use_year_filter and available_years:
-        selected_year = st.selectbox(
-            "Selecione o ano",
-            options=["Todos"] + sorted(list(available_years), reverse=True),
-            key="filter_year"
-        )
-    else:
-        selected_year = None
-
-with col3:
-    st.write("")  # Espaçamento
-    st.caption("💡 Use filtros para comparar estudos específicos")
-
-st.divider()
-
-# Text area de pergunta
-if not st.session_state.get("rag_ready"):
-    pergunta = st.text_area(
-        "Digite sua pergunta sobre os papers",
-        height=100,
-        disabled=True,
-        placeholder="Configure o sistema RAG primeiro..."
-    )
-else:
+    with filter_col2:
+        use_year_filter = st.checkbox("Filtrar por Ano")
+        if use_year_filter and available_years:
+            selected_year = st.selectbox(
+                "Selecione o ano",
+                options=["Todos"] + sorted(list(available_years), reverse=True),
+                key="filter_year"
+            )
+            if selected_year == "Todos":
+                selected_year = None
+    
+    with filter_col3:
+        st.write("")  # Espaçamento
+        st.caption("💡 Use filtros para comparar estudos específicos")
+    
+    st.divider()
+    
+    # TEXT AREA DE PERGUNTA
     pergunta = st.text_area(
         "Digite sua pergunta sobre os papers",
         height=100,
         placeholder="Ex: Quais metodologias foram utilizadas?"
     )
 
-col1, col2 = st.columns([1, 5])
-with col1:
+# BOTÃO DE ANALISAR (fora do if/else para sempre estar disponível)
+btn_col1, btn_col2 = st.columns([1, 5])
+with btn_col1:
     btn_perguntar = st.button(
         "🔍 Analisar", 
         type="primary", 
         disabled=not st.session_state.get("rag_ready")
     )
 
-# ATUALIZADO: Usar query_with_filters se filtros ativos
+# PROCESSAMENTO DA PERGUNTA
 if btn_perguntar and pergunta:
     with st.spinner("🤔 Analisando papers e gerando resposta..."):
         try:
             # Determina se usa filtros
-            author_filter = None
-            year_filter = None
-            
-            if use_author_filter and selected_author != "Todos":
-                author_filter = selected_author
-            if use_year_filter and selected_year != "Todos":
-                year_filter = int(selected_year)
+            author_filter = selected_author if (use_author_filter and selected_author) else None
+            year_filter = int(selected_year) if (use_year_filter and selected_year) else None
             
             # Faz query com ou sem filtros
             if author_filter or year_filter:
@@ -347,25 +347,43 @@ if btn_perguntar and pergunta:
                 )
                 
                 # Mostra filtros aplicados
-                if author_filter or year_filter:
-                    filters_info = []
-                    if author_filter:
-                        filters_info.append(f"👤 Autor: **{author_filter}**")
-                    if year_filter:
-                        filters_info.append(f"📅 Ano: **{year_filter}**")
-                    st.info(" | ".join(filters_info))
+                filters_info = []
+                if author_filter:
+                    filters_info.append(f"👤 Autor: **{author_filter}**")
+                if year_filter:
+                    filters_info.append(f"📅 Ano: **{year_filter}**")
+                st.info("🔍 Filtros aplicados: " + " | ".join(filters_info))
             else:
                 result = st.session_state.rag_engine.query(
                     question=pergunta,
                     return_sources=True
                 )
-            
-            # Exibe resposta (mesmo código anterior)
+
+            with st.expander("🐛 DEBUG - Chunks Recuperados (clique para ver)"):
+                for i, doc in enumerate(result["sources"], 1):
+                    st.markdown(f"**Chunk {i} (score de similaridade):**")
+                    st.markdown(f"- **Arquivo:** {doc.metadata.get('source_file', 'N/A')}")
+                    st.markdown(f"- **Página:** {doc.metadata.get('page', '?')}")
+                    st.markdown(f"- **Autor:** {doc.metadata.get('author', 'N/A')}")
+                    st.text(doc.page_content[:400] + "..." if len(doc.page_content) > 400 else doc.page_content)
+                    st.divider()
+
+            # Exibe resposta
             st.markdown("### 📝 Resposta")
             st.write(result["answer"])
             
-            # ... resto do código de exibição ...
+            # Exibe fontes usadas
+            st.markdown("---")
+            st.markdown("### 📚 Fontes Consultadas")
             
+            for i, doc in enumerate(result["sources"], 1):
+                with st.expander(f"📄 Fonte {i}: {doc.metadata.get('source_file', 'N/A')} - Página {doc.metadata.get('page', '?')}"):
+                    st.text(doc.page_content[:500] + "..." if len(doc.page_content) > 500 else doc.page_content)
+            
+            # Exibe metadados
+            with st.expander("ℹ️ Informações da Consulta"):
+                st.json(result["metadata"])
+        
         except Exception as e:
             st.error(f"Erro ao processar pergunta: {str(e)}")
 # Footer
