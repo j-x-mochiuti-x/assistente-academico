@@ -30,20 +30,14 @@ class RAGEngine:
         self, 
         embedding_model: str = None,
         llm_model: str = None,
-        persist_directory: str = None
+        persist_directory: str = None,
+        collection_name: str = "academic_papers"
     ):
-        """
-        Inicializa o motor RAG.
-        
-        Args:
-            embedding_model: Nome do modelo de embedding (padrão: config.py)
-            llm_model: Nome do modelo LLM (padrão: config.py)
-            persist_directory: Diretório para salvar vetores (padrão: config.py)
-        """
         # Configurações
         self.embedding_model_name = embedding_model or EMBEDDING_CONFIG["model_name"]
         self.llm_model_name = llm_model or LLM_CONFIG["model"]
         self.persist_dir = persist_directory or str(CHROMA_DIR)
+        self.collection_name = collection_name
         
         # Inicializa componentes (lazy loading - só cria quando necessário)
         self._embeddings = None
@@ -99,7 +93,7 @@ class RAGEngine:
     def create_vectorstore(
         self, 
         documents: List[Document],
-        collection_name: str = "academic_papers"
+        collection_name: str = None
     ) -> Chroma:
         """
         Cria um banco vetorial a partir de documentos.
@@ -119,8 +113,11 @@ class RAGEngine:
         if not documents:
             raise ValueError("Lista de documentos vazia")
         
+        coll_name = collection_name or self.collection_name
+        
         print(f"⏳ Criando banco vetorial com {len(documents)} chunks...")
         print(f"   📁 Salvando em: {self.persist_dir}")
+        print(f"   📂 Collection: {coll_name}")
         
         # Cria o banco vetorial
         # Isso vai:
@@ -130,7 +127,7 @@ class RAGEngine:
             documents=documents,
             embedding=self.embeddings,
             persist_directory=self.persist_dir,
-            collection_name=collection_name
+            collection_name=coll_name
         )
         
         print(f"✅ Banco vetorial criado: {vectorstore._collection.count()} vetores")
@@ -138,7 +135,7 @@ class RAGEngine:
         self._vectorstore = vectorstore
         return vectorstore
     
-    def load_vectorstore(self, collection_name: str = "academic_papers") -> Chroma:
+    def load_vectorstore(self, collection_name: str = None) -> Chroma:
         """
         Carrega um banco vetorial existente do disco.
         
@@ -151,12 +148,14 @@ class RAGEngine:
         if not Path(self.persist_dir).exists():
             raise FileNotFoundError(f"Banco vetorial não encontrado em: {self.persist_dir}")
         
+        coll_name = collection_name or self.collection_name
         print(f"⏳ Carregando banco vetorial de: {self.persist_dir}")
+        print(f"   📂 Collection: {coll_name}")
         
         vectorstore = Chroma(
             persist_directory=self.persist_dir,
             embedding_function=self.embeddings,
-            collection_name=collection_name
+            collection_name=coll_name   
         )
         
         print(f"✅ Banco carregado: {vectorstore._collection.count()} vetores")
