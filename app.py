@@ -439,40 +439,59 @@ if btn_perguntar and pergunta:
         except Exception as e:
             st.error(f"Erro ao processar pergunta: {str(e)}")
 
-# ==================== SEÇÃO EXPERIMENTAL: SÍNTESE DE LITERATURA ====================
+# ==================== SÍNTESE DE LITERATURA (FEATURE PRINCIPAL) ====================
 if st.session_state.get("rag_ready") and st.session_state.get("processed_docs"):
     st.markdown("---")
-    st.markdown("## 🔬 Análise Avançada (Preview Fase 4)")
+    st.markdown("## 📚 Síntese de Literatura Automatizada")
     
-    with st.expander("📚 Síntese de Literatura (Experimental)", expanded=False):
-        st.info("""
-        **🚀 Feature em desenvolvimento - Preview da Fase 4**
+    st.info("""
+    **🎯 Feature Diferenciada:** Análise comparativa automática de múltiplos papers acadêmicos.
+    
+    **Como funciona:**
+    1. **MAP:** Cada paper é analisado individualmente focando no aspecto escolhido
+    2. **REDUCE:** Os resumos são sintetizados em uma comparação estruturada
+    3. **EXPORT:** Resultado disponível em Markdown/TXT para uso em trabalhos acadêmicos
+    """)
+    
+    # Verifica quantos papers foram processados
+    total_papers = len([r for r in st.session_state.processed_docs if r["success"]])
+    
+    if total_papers < 2:
+        st.warning(f"⚠️ Você tem apenas {total_papers} paper(s). Carregue pelo menos 2 para comparação.")
+    else:
+        st.success(f"✅ {total_papers} papers prontos para síntese comparativa")
         
-        Esta funcionalidade permite:
-        - Resumir cada paper individualmente (MAP)
-        - Comparar papers automaticamente (REDUCE)
-        - Gerar revisão de literatura estruturada
+        # Configurações da síntese
+        col1, col2 = st.columns([2, 1])
         
-        ⚠️ Pode demorar alguns minutos dependendo do número de papers.
-        """)
+        with col1:
+            synthesis_focus = st.selectbox(
+                "🎯 Foco da Análise",
+                options=["completo", "metodologia", "resultados", "limitacoes"],
+                help="Escolha o aspecto que deseja comparar entre os papers"
+            )
         
-        # Seletor de foco
-        synthesis_focus = st.selectbox(
-            "Foco da análise",
-            options=["completo", "metodologia", "resultados", "limitacoes"],
-            help="Escolha o aspecto a analisar nos papers"
-        )
+        with col2:
+            include_individual = st.checkbox(
+                "Incluir resumos individuais",
+                value=True,
+                help="Além da síntese comparativa, incluir resumo de cada paper"
+            )
         
+        # Descrições dos focos
         focus_descriptions = {
-            "completo": "Resumo executivo completo de cada paper",
-            "metodologia": "Foca em métodos, técnicas e análises usadas",
-            "resultados": "Foca em achados principais e dados quantitativos",
-            "limitacoes": "Foca em limitações e gaps de pesquisa"
+            "completo": "📖 **Revisão Completa:** Objetivo, metodologia, resultados e conclusões de cada paper",
+            "metodologia": "🔬 **Metodologias:** Foca em métodos, técnicas, amostras e análises estatísticas",
+            "resultados": "📊 **Resultados:** Foca em achados principais, dados quantitativos e significância",
+            "limitacoes": "⚠️ **Limitações:** Foca em problemas metodológicos e gaps de pesquisa"
         }
         
-        st.caption(f"ℹ️ {focus_descriptions[synthesis_focus]}")
+        st.markdown(focus_descriptions[synthesis_focus])
         
-        if st.button("🔄 Gerar Síntese Comparativa", type="secondary"):
+        st.divider()
+        
+        # Botão principal
+        if st.button("🚀 Gerar Revisão de Literatura", type="primary", use_container_width=True):
             from src.synthesis import PaperSynthesizer
             
             # Agrupa chunks por paper
@@ -482,53 +501,136 @@ if st.session_state.get("rag_ready") and st.session_state.get("processed_docs"):
                     source_file = result["metadata"]["source_file"]
                     papers_documents[source_file] = result["documents"]
             
-            if len(papers_documents) < 2:
-                st.warning("⚠️ Carregue pelo menos 2 papers para comparação")
-            else:
-                with st.spinner(f"Analisando {len(papers_documents)} papers..."):
-                    try:
-                        # Cria sintetizador
-                        synthesizer = PaperSynthesizer(st.session_state.rag_engine.llm)
-                        
-                        # Gera revisão
-                        review = synthesizer.generate_literature_review(
-                            papers_documents,
-                            focus=synthesis_focus
-                        )
-                        
-                        # Exibe resultados
-                        st.success(f"✅ Análise de {review['total_papers']} papers concluída!")
-                        
-                        # Resumos individuais
+            # Estimativa de tempo
+            estimated_time = len(papers_documents) * 15  # ~15s por paper
+            
+            with st.spinner(f"⏳ Processando {len(papers_documents)} papers... (tempo estimado: ~{estimated_time}s)"):
+                try:
+                    # Progress bar
+                    progress_bar = st.progress(0)
+                    status_text = st.empty()
+                    
+                    # Callback para atualizar progresso (simulado)
+                    import time
+                    
+                    status_text.text("📖 Fase MAP: Analisando papers individuais...")
+                    progress_bar.progress(0.2)
+                    
+                    # Cria sintetizador
+                    synthesizer = PaperSynthesizer(st.session_state.rag_engine.llm)
+                    
+                    # Gera revisão
+                    review = synthesizer.generate_literature_review(
+                        papers_documents,
+                        focus=synthesis_focus,
+                        include_individual=include_individual
+                    )
+                    
+                    progress_bar.progress(0.8)
+                    status_text.text("🔄 Fase REDUCE: Gerando síntese comparativa...")
+                    
+                    # Exporta para Markdown
+                    markdown_output = synthesizer.export_to_markdown(review)
+                    
+                    progress_bar.progress(1.0)
+                    status_text.text("✅ Revisão de literatura concluída!")
+                    
+                    time.sleep(0.5)
+                    progress_bar.empty()
+                    status_text.empty()
+                    
+                    # Salva no session_state para não perder
+                    st.session_state.last_review = {
+                        "result": review,
+                        "markdown": markdown_output,
+                        "timestamp": datetime.now()
+                    }
+                    
+                    # Métricas da análise
+                    st.markdown("### 📊 Métricas da Análise")
+                    metric_col1, metric_col2, metric_col3, metric_col4 = st.columns(4)
+                    
+                    with metric_col1:
+                        st.metric("Papers Analisados", f"{review['successful_analyses']}/{review['total_papers']}")
+                    with metric_col2:
+                        st.metric("Tempo de Processamento", f"{review['duration_seconds']:.1f}s")
+                    with metric_col3:
+                        st.metric("Palavras Geradas", review['total_words'])
+                    with metric_col4:
+                        focus_emoji = {"completo": "📖", "metodologia": "🔬", "resultados": "📊", "limitacoes": "⚠️"}
+                        st.metric("Foco", f"{focus_emoji.get(synthesis_focus, '📄')} {synthesis_focus.title()}")
+                    
+                    st.divider()
+                    
+                    # Exibe síntese comparativa
+                    st.markdown("### 📊 Síntese Comparativa")
+                    st.markdown(review["comparative_synthesis"])
+                    
+                    # Resumos individuais (se solicitado)
+                    if include_individual and "individual_summaries" in review:
+                        st.markdown("---")
                         st.markdown("### 📄 Resumos Individuais")
+                        
                         for i, summary in enumerate(review["individual_summaries"], 1):
                             if summary["success"]:
                                 meta = summary["metadata"]
-                                author = meta.get("author", "Desconhecido")
+                                author = meta.get("author", "Autor desconhecido")
                                 year = meta.get("year", "?")
+                                source = meta.get("source_file", "Documento")
                                 
-                                with st.expander(f"Paper {i}: {author} ({year})"):
-                                    st.write(summary["summary"])
-                        
-                        # Síntese comparativa
-                        st.markdown("---")
-                        st.markdown("### 📊 Síntese Comparativa")
-                        st.markdown(review["comparative_synthesis"])
-                        
-                        # Botão de download (preparação para Fase 4)
+                                with st.expander(f"📑 Paper {i}: {author} ({year}) - {source[:40]}..."):
+                                    st.markdown(summary["summary"])
+                                    st.caption(f"💬 {summary['word_count']} palavras")
+                    
+                    # Botões de export
+                    st.markdown("---")
+                    st.markdown("### ⬇️ Exportar Revisão")
+                    
+                    export_col1, export_col2, export_col3 = st.columns(3)
+                    
+                    with export_col1:
                         st.download_button(
-                            "⬇️ Baixar Revisão (TXT)",
-                            data=review["comparative_synthesis"],
-                            file_name=f"revisao_literatura_{synthesis_focus}.txt",
-                            mime="text/plain"
+                            "📝 Download Markdown",
+                            data=markdown_output,
+                            file_name=f"revisao_literatura_{synthesis_focus}_{datetime.now().strftime('%Y%m%d_%H%M')}.md",
+                            mime="text/markdown",
+                            use_container_width=True
                         )
                     
-                    except Exception as e:
-                        st.error(f"Erro ao gerar síntese: {str(e)}")
-                        import traceback
-                        with st.expander("🐛 Detalhes do erro"):
-                            st.code(traceback.format_exc())
+                    with export_col2:
+                        st.download_button(
+                            "📄 Download TXT",
+                            data=markdown_output,
+                            file_name=f"revisao_literatura_{synthesis_focus}_{datetime.now().strftime('%Y%m%d_%H%M')}.txt",
+                            mime="text/plain",
+                            use_container_width=True
+                        )
+                    
+                    with export_col3:
+                        # Copia para clipboard (via botão)
+                        if st.button("📋 Copiar Texto", use_container_width=True):
+                            st.toast("✅ Texto copiado! Use Ctrl+V para colar")
+                            st.code(markdown_output[:500] + "\n...\n[Use o botão de download para texto completo]")
+                
+                except Exception as e:
+                    st.error(f"❌ Erro ao gerar revisão: {str(e)}")
+                    import traceback
+                    with st.expander("🐛 Detalhes do Erro (para debug)"):
+                        st.code(traceback.format_exc())
+
+# Mostra última revisão gerada (se houver)
+if st.session_state.get("last_review"):
+    with st.expander("🕒 Última Revisão Gerada", expanded=False):
+        last = st.session_state.last_review
+        st.caption(f"Gerada em: {last['timestamp'].strftime('%d/%m/%Y às %H:%M:%S')}")
+        
+        st.download_button(
+            "⬇️ Re-download da Última Revisão",
+            data=last["markdown"],
+            file_name=f"revisao_ultima.md",
+            mime="text/markdown"
+        )
 
 # Footer
 st.markdown("---")
-st.caption("Desenvolvido para portfólio de João Otávio Mochiuti | Powered by LangChain + Groq")
+st.caption("Desenvolvido para portfólio de João Otávio Mochiuti | Powered by LangChain + Llama 3.3 70B via Groq")
