@@ -9,10 +9,34 @@ João Otávio Mochiuti - Cientista de Dados em formação
 ## 📋 Status do Projeto
 
 - [x] Fase 1: Setup e estrutura base
-- [ ] Fase 2: Processamento de documentos
-- [ ] Fase 3: Pipeline RAG funcional
+- [x] Fase 2: Processamento de documentos
+- [x] Fase 3: Pipeline RAG funcional
 - [ ] Fase 4: Funcionalidades avançadas
 - [ ] Fase 5: Deploy e documentação final
+
+## 🗺️ Roadmap de Funcionalidades
+
+### ✅ Fase 3 (Concluída)
+- [x] Upload e processamento de PDFs
+- [x] Extração e indexação vetorial (ChromaDB)
+- [x] Sistema RAG completo
+- [x] Filtros por autor/ano
+- [x] Múltiplos modelos de embedding
+- [x] Preview de síntese de literatura
+
+### 🚧 Fase 4 (Em Desenvolvimento)
+- [ ] Síntese de literatura completa (Map-Reduce)
+- [ ] Comparação automática de metodologias
+- [ ] Export de revisões em PDF/Word
+- [ ] Hybrid Search (semântico + keyword)
+- [ ] Reranking de resultados
+- [ ] Visualizações interativas
+
+### 📋 Fase 5 (Planejada)
+- [ ] Deploy em produção
+- [ ] Testes automatizados completos
+- [ ] Documentação técnica detalhada
+- [ ] Otimizações de performance
 
 ## 🚀 Como Executar (Fase 1)
 ```bash
@@ -55,3 +79,5 @@ Obtenha sua API Key em: https://console.groq.com/
 Pergunta: "Qual é o objetivo do trabalho?"
 - MiniLM: ✅ Recuperou corretamente (0.5s indexação)
 - Nomic: ✅ Recuperou + melhor estruturação (2.1s indexação)
+
+
