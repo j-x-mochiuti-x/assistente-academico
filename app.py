@@ -5,7 +5,7 @@ Fase 1: Estrutura básica funcional
 import streamlit as st
 import os
 from config import UI_CONFIG, LLM_CONFIG, EMBEDDING_CONFIG, EMBEDDING_OPTIONS, DEFAULT_EMBEDDING, CHROMA_DIR
-import datetime
+from datetime import datetime
 
 
 current_year = datetime.date.today().year
