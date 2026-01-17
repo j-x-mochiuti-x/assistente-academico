@@ -438,6 +438,97 @@ if btn_perguntar and pergunta:
         
         except Exception as e:
             st.error(f"Erro ao processar pergunta: {str(e)}")
+
+# ==================== SEÇÃO EXPERIMENTAL: SÍNTESE DE LITERATURA ====================
+if st.session_state.get("rag_ready") and st.session_state.get("processed_docs"):
+    st.markdown("---")
+    st.markdown("## 🔬 Análise Avançada (Preview Fase 4)")
+    
+    with st.expander("📚 Síntese de Literatura (Experimental)", expanded=False):
+        st.info("""
+        **🚀 Feature em desenvolvimento - Preview da Fase 4**
+        
+        Esta funcionalidade permite:
+        - Resumir cada paper individualmente (MAP)
+        - Comparar papers automaticamente (REDUCE)
+        - Gerar revisão de literatura estruturada
+        
+        ⚠️ Pode demorar alguns minutos dependendo do número de papers.
+        """)
+        
+        # Seletor de foco
+        synthesis_focus = st.selectbox(
+            "Foco da análise",
+            options=["completo", "metodologia", "resultados", "limitacoes"],
+            help="Escolha o aspecto a analisar nos papers"
+        )
+        
+        focus_descriptions = {
+            "completo": "Resumo executivo completo de cada paper",
+            "metodologia": "Foca em métodos, técnicas e análises usadas",
+            "resultados": "Foca em achados principais e dados quantitativos",
+            "limitacoes": "Foca em limitações e gaps de pesquisa"
+        }
+        
+        st.caption(f"ℹ️ {focus_descriptions[synthesis_focus]}")
+        
+        if st.button("🔄 Gerar Síntese Comparativa", type="secondary"):
+            from src.synthesis import PaperSynthesizer
+            
+            # Agrupa chunks por paper
+            papers_documents = {}
+            for result in st.session_state.processed_docs:
+                if result["success"]:
+                    source_file = result["metadata"]["source_file"]
+                    papers_documents[source_file] = result["documents"]
+            
+            if len(papers_documents) < 2:
+                st.warning("⚠️ Carregue pelo menos 2 papers para comparação")
+            else:
+                with st.spinner(f"Analisando {len(papers_documents)} papers..."):
+                    try:
+                        # Cria sintetizador
+                        synthesizer = PaperSynthesizer(st.session_state.rag_engine.llm)
+                        
+                        # Gera revisão
+                        review = synthesizer.generate_literature_review(
+                            papers_documents,
+                            focus=synthesis_focus
+                        )
+                        
+                        # Exibe resultados
+                        st.success(f"✅ Análise de {review['total_papers']} papers concluída!")
+                        
+                        # Resumos individuais
+                        st.markdown("### 📄 Resumos Individuais")
+                        for i, summary in enumerate(review["individual_summaries"], 1):
+                            if summary["success"]:
+                                meta = summary["metadata"]
+                                author = meta.get("author", "Desconhecido")
+                                year = meta.get("year", "?")
+                                
+                                with st.expander(f"Paper {i}: {author} ({year})"):
+                                    st.write(summary["summary"])
+                        
+                        # Síntese comparativa
+                        st.markdown("---")
+                        st.markdown("### 📊 Síntese Comparativa")
+                        st.markdown(review["comparative_synthesis"])
+                        
+                        # Botão de download (preparação para Fase 4)
+                        st.download_button(
+                            "⬇️ Baixar Revisão (TXT)",
+                            data=review["comparative_synthesis"],
+                            file_name=f"revisao_literatura_{synthesis_focus}.txt",
+                            mime="text/plain"
+                        )
+                    
+                    except Exception as e:
+                        st.error(f"Erro ao gerar síntese: {str(e)}")
+                        import traceback
+                        with st.expander("🐛 Detalhes do erro"):
+                            st.code(traceback.format_exc())
+
 # Footer
 st.markdown("---")
 st.caption("Desenvolvido para portfólio de João Otávio Mochiuti | Powered by LangChain + Groq")
