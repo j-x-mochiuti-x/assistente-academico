@@ -93,40 +93,64 @@ class RAGEngine:
         return self._llm
     
     def create_vectorstore(
-        self, 
-        documents: List[Document],
-        collection_name: str = None
-    ) -> Chroma:
-        """
-        Cria um banco vetorial a partir de documentos.
-        
-        Este é o processo de INDEXAÇÃO:
-        1. Pega cada chunk de texto
-        2. Converte em vetor numérico (embedding)
-        3. Salva no ChromaDB com metadados
-        
-        Args:
-            documents: Lista de chunks processados
-            collection_name: Nome da coleção no ChromaDB
-            
-        Returns:
-            Instância do ChromaDB
-        """
+    self, 
+    documents: List[Document],
+    collection_name: str = None
+) -> Chroma:
+    
         if not documents:
             raise ValueError("Lista de documentos vazia")
-        
+    
         coll_name = collection_name or self.collection_name
-        
+    
         print(f"⏳ Criando banco vetorial com {len(documents)} chunks...")
         print(f"   📁 Salvando em: {self.persist_dir}")
         print(f"   📂 Collection: {coll_name}")
         
+        # ✅ LIMPEZA AGRESSIVA DE METADADOS
+        cleaned_documents = []
+        
+        for i, doc in enumerate(documents):
+            # Metadados permitidos (apenas tipos simples)
+            clean_metadata = {}
+            
+            for key, value in doc.metadata.items():
+                # Pula se for None
+                if value is None:
+                    continue
+                
+                # Converte para tipos aceitos pelo ChromaDB
+                if isinstance(value, (str, int, float, bool)):
+                    clean_metadata[key] = value
+                elif isinstance(value, dict):
+                    # Ignora dicionários complexos
+                    continue
+                elif isinstance(value, list):
+                    # Ignora listas
+                    continue
+                else:
+                    # Tenta converter para string
+                    try:
+                        clean_metadata[key] = str(value)
+                    except:
+                        continue
+            
+            # Cria documento limpo
+            cleaned_doc = Document(
+                page_content=doc.page_content,
+                metadata=clean_metadata
+            )
+            cleaned_documents.append(cleaned_doc)
+            
+            # Debug: mostra primeiro documento
+            if i == 0:
+                print(f"   🐛 DEBUG - Metadados do primeiro chunk: {clean_metadata}")
+        
+        print(f"   🧹 {len(cleaned_documents)} documentos prontos para indexação")
+        
         # Cria o banco vetorial
-        # Isso vai:
-        # 1. Gerar embeddings para cada chunk (pode demorar!)
-        # 2. Salvar no disco (persist_directory)
         vectorstore = Chroma.from_documents(
-            documents=documents,
+            documents=cleaned_documents,
             embedding=self.embeddings,
             persist_directory=self.persist_dir,
             collection_name=coll_name

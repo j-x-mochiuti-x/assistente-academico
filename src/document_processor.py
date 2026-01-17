@@ -349,7 +349,10 @@ class DocumentProcessor:
         """
         for chunk in chunks:
             chunk.metadata.update(metadata)
+        
+        chunk.metadata = {k: v for k, v in chunk.metadata.items() if v is not None}
         return chunks
+    
 #Função auxiliar para uso direto (sem instanciar classe)
 def process_single_pdf(pdf_source: Any, filename: str = "documento.pdf") -> Dict[str, Any]:
     """
