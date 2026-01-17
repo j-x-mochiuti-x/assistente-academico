@@ -5,7 +5,7 @@ Fase 1: Estrutura básica funcional
 import streamlit as st
 import os
 from config import UI_CONFIG, LLM_CONFIG, EMBEDDING_CONFIG, EMBEDDING_OPTIONS, DEFAULT_EMBEDDING, CHROMA_DIR
-from datetime import datetime
+import datetime
 
 
 current_year = datetime.date.today().year
@@ -543,7 +543,7 @@ if st.session_state.get("rag_ready") and st.session_state.get("processed_docs"):
                     st.session_state.last_review = {
                         "result": review,
                         "markdown": markdown_output,
-                        "timestamp": datetime.now()
+                        "timestamp": datetime.datetime.now()
                     }
                     
                     # Métricas da análise
@@ -592,7 +592,7 @@ if st.session_state.get("rag_ready") and st.session_state.get("processed_docs"):
                         st.download_button(
                             "📝 Download Markdown",
                             data=markdown_output,
-                            file_name=f"revisao_literatura_{synthesis_focus}_{datetime.now().strftime('%Y%m%d_%H%M')}.md",
+                            file_name=f"revisao_literatura_{synthesis_focus}_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.md",
                             mime="text/markdown",
                             use_container_width=True
                         )
@@ -601,7 +601,7 @@ if st.session_state.get("rag_ready") and st.session_state.get("processed_docs"):
                         st.download_button(
                             "📄 Download TXT",
                             data=markdown_output,
-                            file_name=f"revisao_literatura_{synthesis_focus}_{datetime.now().strftime('%Y%m%d_%H%M')}.txt",
+                            file_name=f"revisao_literatura_{synthesis_focus}_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.txt",
                             mime="text/plain",
                             use_container_width=True
                         )
