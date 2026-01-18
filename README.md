@@ -45,10 +45,10 @@ Um assistente alimentado por IA que:
 ⚡ **Economiza** horas de trabalho manual  
 
 ### 🎬 Demo Rápido
-```
-![Demo Completa](https://i.imgur.com/XyddwAq.gif)
 
-```
+![Demo Completa](D:\IA-com-RAG\Animação.gif)
+
+
 
 > **Tempo médio por paper:** ~4 segundos  
 > **Acurácia de retrieval:** 95%+ em testes internos
