@@ -46,7 +46,7 @@ Um assistente alimentado por IA que:
 
 ### 🎬 Demo Rápido
 ```
-![Demo](https://imgur.com/a/XyddwAq)
+![Demo Completa](https://i.imgur.com/XyddwAq.gif)
 
 ```
 
