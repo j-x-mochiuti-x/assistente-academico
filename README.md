@@ -46,7 +46,8 @@ Um assistente alimentado por IA que:
 
 ### 🎬 Demo Rápido
 ```
-![Upload Demo](D:\IA-com-RAG\Animação.gif)
+![Upload Demo](assets/demos/Animação.gif)
+Animação.gif
 ```
 
 > **Tempo médio por paper:** ~4 segundos  
