@@ -17,9 +17,10 @@ Cientista de Dados em Formação
 [![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=Streamlit&logoColor=white)](https://streamlit.io)
 [![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![LangChain](https://img.shields.io/badge/LangChain-121212?style=for-the-badge&logo=chainlink&logoColor=white)](https://langchain.com)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://assistente-academico.streamlit.app/)
 
 ![Status](https://img.shields.io/badge/Status-Em%20Produção-success?style=for-the-badge)
+
 ![Version](https://img.shields.io/badge/Version-1.0.0-blue?style=for-the-badge)
 
 ---
@@ -48,7 +49,9 @@ Um assistente alimentado por IA que:
 
 ![Animação](https://github.com/user-attachments/assets/932909ec-a106-432b-a47e-f82a55be7189)
 
+### Demo ao vivo
 
+[![Streamlit App](https://img.shields.io/badge/Streamlit-Deploy-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://assistente-academico.streamlit.app)
 
 > **Tempo médio por paper:** ~4 segundos  
 > **Acurácia de retrieval:** 95%+ em testes internos
