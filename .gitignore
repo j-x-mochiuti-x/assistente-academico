@@ -25,3 +25,6 @@ chroma_db/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Groq KEY
+api_key.txt
