@@ -23,7 +23,7 @@ st.caption("Análise inteligente de papers científicos usando RAG")
 
 # Sidebar
 with st.sidebar:
-    st.header("⚙️ Configurações - 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")
+    st.header("⚙️ Configurações")
     
     # Input da API Key
     api_key = st.text_input(
