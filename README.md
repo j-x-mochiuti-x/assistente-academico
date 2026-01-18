@@ -46,7 +46,7 @@ Um assistente alimentado por IA que:
 
 ### 🎬 Demo Rápido
 
-![Demo Completa](D:\IA-com-RAG\Animação.gif)
+![Demo Completa](https://imgur.com/a/XyddwAq.gif)
 
 
 
